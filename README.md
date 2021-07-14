@@ -2,23 +2,23 @@
 本项目为C++11编写的基于epoll的多线程网络服务器框架，应用层实现了简单的http服务器和一个回声服务器，其中http解析和get方法请求，目前支持静态资源访问，支持http长连接；
 
 
-#项目目的
+## 项目目的
 
 学习C++知识、部分C++11的语法和编码规范、学习巩固网络编程、网络IO模型、多线程、git使用、linux命令、TCP/IP已经HTTP协议等知识
 在项目过程中参阅了网上许多优秀的博客和开源项目，也参考了陈硕和林亚的代码，在此向他们致敬！
 
-#BUILD
+## BUILD
 
 $ make
 $ make clean
 
-#RUN
+## RUN
 
 $ ./netserver [port] [IO_ThreadNum] [Worker_ThreadNum]
 例： $ ./netserver 80 4 2
 表示开启80端口，采用4个IO线程、2个工作线程的方式
 
-#TECH
+## TECH
 
 1. 基于epoll的IO复用机制实现reactor模式，采用边缘触发(ET)模式和非阻塞模式
 2. 由于采用ET模式，read、write和accept的时候必须采用循环的方式，直到error==EAGAIN为止，防止漏读等清况，这样的效率会比LT模式高很多，减少了触发次数
@@ -31,7 +31,7 @@ $ ./netserver [port] [IO_ThreadNum] [Worker_ThreadNum]
    b. 客户端发送FIN关闭连接后，服务器把数据发完才close，而不是直接暴力close
    c. 如果连接出错，则服务器可以直接close
    
-#性能测试
+## 性能测试
 
 该项目采用了两款开源的http压力测试工具“wrk”和“WebBench”，其中使用了林亚改写后的[WebBench](https://github.com/linyacool/WebBench)
  * 测试方法
@@ -76,3 +76,12 @@ $ ./netserver [port] [IO_ThreadNum] [Worker_ThreadNum]
 
   * index.html网页（有磁盘IO影响）
  ![wrk](./image/wrk_html_4_iothread_2_workerthread.png)
+
+# 开发记录
+* 2019-02-21 Dev: 实现IO线程池，性能比单线程提升30+%，由EventLoopThreadPool类对IO线程进行管理，主线程accept客户端连接，并通过Round-Robin策略分发给IO线程，IO线程负责事件监听、读写操作   和业务计算
+* 2019-02-21 Fix: 修复多线程下HttpServer::HandleMessage函数中phttpsession可能为NULL，导致出现SegmentFault的情况。因为新连接事件过早的添加到epoll中，而HttpSession还没new，如果这时   候有数据来时，会出现phttpsession==NULL，无法处理数据，段错误。
+* 2019-02-24 Dev: 实现worker线程池，响应index.html网页的性能比单线程提升100+%；实现了跨线程唤醒
+* 2019-03-17 Dev: 基于时间轮实现定时器功能，定时剔除不活跃连接，时间轮的插入、删除复杂度为O(1)，执行复杂度取决于每个桶上的链表长度
+* 2019-03-27 Dev&Fix: 把部分关键的原始指针改成智能指针，解决多线程下资源访问引起的内存问题；修复一些内存问题（段错误、double free等）；添加注释
+* 2019-03-28 Fix: 头文件包含次序调整；部分函数参数加const修饰和改为引用传递，提高程序效率
+* 2020-01-17 Dev: 增加了简易协程实现（基于ucontext.h）和简易的异步日志库，不过目前尚未应用到本项目中（供了解学习）
