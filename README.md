@@ -10,12 +10,15 @@
 ## BUILD
 
 $ make
+
 $ make clean
 
 ## RUN
 
 $ ./netserver [port] [IO_ThreadNum] [Worker_ThreadNum]
+
 例： $ ./netserver 80 4 2
+
 表示开启80端口，采用4个IO线程、2个工作线程的方式
 
 ## TECH
